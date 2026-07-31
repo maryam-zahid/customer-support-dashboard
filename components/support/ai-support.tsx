@@ -283,8 +283,10 @@ const [provider, setProvider] = React.useState<'auto' | 'gemini' | 'groq'>('auto
     .find((m) => m.role === 'assistant')?.id
 
   return (
-    <div className="flex h-full flex-col">
-     {/* AI assistant header */}
+    // <div className="flex h-full flex-col">
+    // <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    {/* AI assistant header */}
 <div className="border-b border-border bg-card/30 px-4 py-4 sm:px-6">
   <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
     {/* Assistant details */}
@@ -329,8 +331,9 @@ const [provider, setProvider] = React.useState<'auto' | 'gemini' | 'groq'>('auto
     </div>
 
     {/* Provider and clear controls */}
-    <div className="flex w-full items-stretch gap-2 sm:items-center lg:w-auto">
-      <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-xl border border-primary/30 bg-background/70 p-3 shadow-sm sm:flex-row sm:items-center lg:min-w-[520px]">
+    {/* <div className="flex w-full items-stretch gap-2 sm:items-center lg:w-auto"> */}
+     <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row lg:items-center">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-xl border border-primary/30 bg-background/70 p-3 shadow-sm sm:flex-row sm:items-center lg:min-w-[420px]">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
             AI Provider
@@ -381,15 +384,19 @@ const [provider, setProvider] = React.useState<'auto' | 'gemini' | 'groq'>('auto
 </div>
          
     {/* Transcript */}
-      <div className="relative min-h-0 flex-1">
+      {/* <div className="relative min-h-0 flex-1"> */}
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {isEmpty ? (
           <AIEmptyState onPick={send} />
         ) : (
           <MessageScrollerProvider autoScroll>
-            <MessageScroller className="h-full">
-              <MessageScrollerViewport className="px-4 py-6 sm:px-6">
+            {/* <MessageScroller className="h-full"> */}
+            <MessageScroller className="flex h-full min-h-0 flex-1 flex-col">
+              {/* <MessageScrollerViewport className="px-4 py-6 sm:px-6"> */}
                 {/* <MessageScrollerContent className="mx-auto flex max-w-3xl flex-col gap-6"> */}
-                <MessageScrollerContent className="mx-auto flex max-w-6xl flex-col gap-10">
+               <MessageScrollerViewport className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                {/* <MessageScrollerContent className="mx-auto flex max-w-6xl flex-col gap-10"> */}
+               <MessageScrollerContent className="mx-auto flex w-full max-w-5xl flex-col gap-6">
                   {messages.map((m) => (
                     <MessageScrollerItem
                       key={m.id}
@@ -416,7 +423,8 @@ const [provider, setProvider] = React.useState<'auto' | 'gemini' | 'groq'>('auto
   variant={m.role === 'user' ? 'default' : 'muted'}
   align={m.role === 'user' ? 'end' : 'start'}
   className={cn(
-    'max-w-[85%] rounded-2xl border px-4 py-3 shadow-sm sm:max-w-[70%]',
+    // 'max-w-[85%] rounded-2xl border px-4 py-3 shadow-sm sm:max-w-[70%]',
+   'max-w-[95%] rounded-2xl border px-4 py-3 shadow-sm sm:max-w-[75%]',
     m.role === 'user'
       ? 'border-primary/30 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground'
       : 'border-border bg-muted/70 text-foreground',
@@ -567,7 +575,8 @@ function AIEmptyState({ onPick }: { onPick: (text: string) => void }) {
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <div className="grid w-full gap-2 sm:grid-cols-2">
+          {/* <div className="grid w-full gap-2 sm:grid-cols-2"> */}
+         <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2">
             {AI_SUGGESTIONS.map((s) => (
               <button
                 key={s}

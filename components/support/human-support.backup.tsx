@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import * as React from 'react'
 import {
@@ -27,9 +27,7 @@ import {
 import { cn } from '@/lib/utils'
 import { getSocket } from '@/lib/socket/client'
 import type {
-  ActiveConversation,
   ChatMessagePayload,
-  JoinConversationPayload,
   TypingPayload,
 } from '@/lib/socket/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -94,11 +92,8 @@ export function HumanSupport() {
   const [activeId, setActiveId] = React.useState<string>(CONVERSATIONS[0].id)
   const [query, setQuery] = React.useState('')
   const [draft, setDraft] = React.useState('')
-  const inputRef = React.useRef<HTMLInputElement>(null)
   const [typing, setTyping] = React.useState(false)
-const [activeConversations, setActiveConversations] =
-  React.useState<ActiveConversation[]>([])
-  ///////////
+
   const socket = React.useMemo(() => getSocket(), [])
   const [connected, setConnected] = React.useState(
     () => socket.connected,
@@ -137,124 +132,23 @@ const [activeConversations, setActiveConversations] =
     }
   }, [socket])
 
+  const active = conversations.find((c) => c.id === activeId)!
+
   React.useEffect(() => {
-  function handleConversations(items: ActiveConversation[]) {
-  setActiveConversations(items)
-
-  setConversations((current) => {
-    const updated = [...current]
-
-    for (const item of items) {
-      const alreadyExists = updated.some(
-        (conversation) => conversation.id === item.conversationId,
-      )
-
-      if (!alreadyExists) {
-        updated.push({
-          id: item.conversationId,
-          subject: 'New support request',
-          channel: 'Chat',
-          priority: 'normal',
-          unread: 0,
-          lastActivity: Date.now(),
-          status: 'open',
-          customer: {
-            id: item.userId,
-            name: item.userName,
-avatar: '',
-            status: 'online',
-          },
-          messages: [],
-        })
-      }
+    const payload = {
+      conversationId: activeId,
+      userId: CURRENT_AGENT.id,
+      userName: CURRENT_AGENT.name,
+      role: 'agent' as const,
     }
 
-    return updated
-  })
-}
+    socket.emit('chat:join', payload)
 
-  function handleConversationAdded(item: ActiveConversation) {
-  setActiveConversations((current) => {
-    const alreadyExists = current.some(
-      (conversation) =>
-        conversation.conversationId === item.conversationId,
-    )
-
-    if (alreadyExists) {
-      return current
+    return () => {
+      socket.emit('chat:leave', payload)
     }
+  }, [activeId, socket])
 
-    return [...current, item]
-  })
-
-  setConversations((current) => {
-    const alreadyExists = current.some(
-      (conversation) => conversation.id === item.conversationId,
-    )
-
-    if (alreadyExists) {
-      return current
-    }
-
-    return [
-      ...current,
-      {
-        id: item.conversationId,
-        subject: 'New support request',
-        channel: 'Chat',
-        priority: 'normal',
-        unread: 0,
-        lastActivity: Date.now(),
-        status: 'open',
-        customer: {
-          id: item.userId,
-          name: item.userName,
-avatar: '',
-          status: 'online',
-        },
-        messages: [],
-      },
-    ]
-  })
-}
-  //////////
-
-  socket.on('chat:conversations', handleConversations)
-  socket.on('chat:conversation-added', handleConversationAdded)
-
-  socket.emit('chat:get-conversations')
-
-  return () => {
-    socket.off('chat:conversations', handleConversations)
-    socket.off('chat:conversation-added', handleConversationAdded)
-  }
-}, [socket])
-
-
-
-const active =
-  conversations.find((conversation) => conversation.id === activeId) ??
-  conversations[0]
-
-React.useEffect(() => {
-  inputRef.current?.focus()
-}, [activeId])
-
-React.useEffect(() => {
-  const payload = {
-    conversationId: activeId,
-    userId: CURRENT_AGENT.id,
-    userName: CURRENT_AGENT.name,
-    role: 'agent' as const,
-  }
-
-  socket.emit('chat:join', payload)
-
-  return () => {
-    socket.emit('chat:leave', payload)
-  }
-}, [activeId, socket])
-/////////////////
   React.useEffect(() => {
     function handleMessage(message: ChatMessagePayload) {
       setConversations((prev) =>
@@ -402,12 +296,13 @@ React.useEffect(() => {
         onlineTeam={onlineTeam}
         connected={connected}
       />
-<div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">        {/* Conversation list */}
+      <div className="grid min-h-0 flex-1 md:grid-cols-[320px_1fr] xl:grid-cols-[320px_1fr_280px]">
+        {/* Conversation list */}
         <aside
-          className={cn(
-            'flex min-h-0 flex-col border-r border-border',
-            showThread && 'hidden md:flex',
-          )}
+         className={cn(
+  'min-h-0 min-w-0 flex-col border-r border-border',
+  showThread ? 'hidden lg:flex' : 'flex',
+)}
         >
           <div className="border-b border-border p-3">
             <InputGroup>
@@ -432,24 +327,19 @@ React.useEffect(() => {
               />
             ))}
             {filtered.length === 0 && (
-              <div className="p-6 text-center">
-                <p className="text-sm font-medium text-foreground">
-                  No conversations found
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Try another customer name or subject.
-                </p>
-              </div>
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                No conversations match “{query}”.
+              </p>
             )}
           </div>
         </aside>
 
         {/* Active thread */}
         <section
-          className={cn(
-            'flex min-h-0 flex-col bg-background',
-            !showThread && 'hidden md:flex',
-          )}
+         className={cn(
+  'min-h-0 min-w-0 flex-col bg-background',
+  showThread ? 'flex' : 'hidden lg:flex',
+)}
         >
           <ThreadHeader
             conversation={active}
@@ -460,9 +350,8 @@ React.useEffect(() => {
             <MessageScrollerProvider autoScroll>
               <MessageScroller className="h-full">
                 {/* <MessageScrollerViewport className="px-4 py-5 sm:px-6"> */}
-               <MessageScrollerViewport className="px-3 py-4 sm:px-5 sm:py-5 lg:px-6">
-                 {/* <MessageScrollerContent className="mx-auto flex max-w-3xl flex-col gap-4"> */}
-                  <MessageScrollerContent className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+                  <MessageScrollerViewport className="bg-gradient-to-b from-background via-background to-primary/[0.02] px-4 py-8 sm:px-8">
+                  <MessageScrollerContent className="mx-auto flex max-w-2xl flex-col gap-4">
                     <MessageScrollerItem messageId="day">
                       <Marker variant="separator">
                         <MarkerContent>Today</MarkerContent>
@@ -479,25 +368,15 @@ React.useEffect(() => {
                         >
                           <Message align={mine ? 'end' : 'start'}>
                             <MessageAvatar>
-                              {/* <Avatar className="size-10"> */}
-                                {/* <AvatarImage
-  src={conversation.customer.avatar || undefined}
-  alt={conversation.customer.name}
-/> */}
-<Avatar className="size-10">
-  {sender.avatar && (
-    <AvatarImage
-      src={sender.avatar}
-      alt={sender.name}
-    />
-  )}
-
-  <AvatarFallback>
-    {initials(sender.name)}
-  </AvatarFallback>
-</Avatar>
-
-                                
+                              <Avatar className="size-8">
+                                <AvatarImage
+                                  src={sender.avatar || '/placeholder.svg'}
+                                  alt={sender.name}
+                                />
+                                <AvatarFallback>
+                                  {initials(sender.name)}
+                                </AvatarFallback>
+                              </Avatar>
                             </MessageAvatar>
                             <MessageContent>
                               <Bubble
@@ -520,20 +399,17 @@ React.useEffect(() => {
                     {typing && (
                       <MessageScrollerItem messageId="typing">
                         <Message align="start">
-                         <MessageAvatar>
-  <Avatar className="size-10">
-    {active.customer.avatar && (
-      <AvatarImage
-        src={active.customer.avatar}
-        alt={active.customer.name}
-      />
-    )}
-
-    <AvatarFallback>
-      {initials(active.customer.name)}
-    </AvatarFallback>
-  </Avatar>
-</MessageAvatar>
+                          <MessageAvatar>
+                            <Avatar className="size-8">
+                              <AvatarImage
+                                src={active.customer.avatar || '/placeholder.svg'}
+                                alt={active.customer.name}
+                              />
+                              <AvatarFallback>
+                                {initials(active.customer.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </MessageAvatar>
                           <MessageContent>
                             <Bubble variant="secondary" align="start">
                               <BubbleContent>
@@ -553,10 +429,8 @@ React.useEffect(() => {
 
           {/* Composer */}
           <div className="border-t border-border bg-card/40 p-3 sm:px-6 sm:py-4">
-            {/* <InputGroup className="h-10"> */}
-            <InputGroup className="min-h-11 w-full">
+            <InputGroup className="h-10">
               <InputGroupInput
-              ref={inputRef}
                 value={draft}
                 onChange={(e) => handleDraftChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -585,15 +459,14 @@ React.useEffect(() => {
                   onClick={sendReply}
                   aria-label="Send reply"
                 >
-                  {/* <SendIcon className="rotate-[-20deg]" /> */}
-              <SendIcon className="size-4 rotate-[-20deg]" />
+<SendIcon className="size-4 rotate-[-20deg]" />
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
           </div>
         </section>
 
-        
+      
       </div>
     </div>
   )
@@ -617,8 +490,7 @@ function StatsBar({
       <Stat label="Unread" value={totalUnread} accent="primary" />
       <Separator orientation="vertical" className="hidden h-8 sm:block" />
       <Stat label="Agents online" value={onlineTeam} accent="success" />
-      {/* <div className="ml-auto"> */}
-      <div className="ml-auto max-sm:w-full max-sm:border-t max-sm:border-border/60 max-sm:pt-2">
+      <div className="ml-auto">
         <ConnectionBadge connected={connected} />
       </div>
     </div>
@@ -696,9 +568,9 @@ function ConversationRow({
       <div className="relative shrink-0">
         <Avatar className="size-10">
           <AvatarImage
-  src={conversation.customer.avatar || undefined}
-  alt={conversation.customer.name}
-/>
+            src={conversation.customer.avatar || '/placeholder.svg'}
+            alt={conversation.customer.name}
+          />
           <AvatarFallback>{initials(conversation.customer.name)}</AvatarFallback>
         </Avatar>
         <span
@@ -773,9 +645,9 @@ function ThreadHeader({
       <div className="relative shrink-0">
         <Avatar className="size-9">
           <AvatarImage
-  src={conversation.customer.avatar || undefined}
-  alt={conversation.customer.name}
-/>
+            src={conversation.customer.avatar || '/placeholder.svg'}
+            alt={conversation.customer.name}
+          />
           <AvatarFallback>{initials(conversation.customer.name)}</AvatarFallback>
         </Avatar>
         <span
@@ -875,7 +747,7 @@ function PresenceRow({ person, you }: { person: Person; you?: boolean }) {
   return (
     <li className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60">
       <div className="relative shrink-0">
-        <Avatar className="size-10">
+        <Avatar className="size-8">
           <AvatarImage src={person.avatar || '/placeholder.svg'} alt={person.name} />
           <AvatarFallback>{initials(person.name)}</AvatarFallback>
         </Avatar>
@@ -914,7 +786,6 @@ function TypingDots() {
     </span>
   )
 }
-
 
 
 
