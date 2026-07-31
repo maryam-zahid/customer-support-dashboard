@@ -90,7 +90,7 @@ function getActiveConversations(): ActiveConversation[] {
 
 async function startServer() {
   const dev = process.env.NODE_ENV !== 'production'
-  const hostname = process.env.HOSTNAME ?? 'localhost'
+const hostname = '0.0.0.0'
   const port = Number(process.env.PORT ?? 3000)
 
   if (!Number.isInteger(port) || port <= 0) {

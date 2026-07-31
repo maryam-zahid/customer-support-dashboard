@@ -7,14 +7,21 @@ import type {
   ServerToClientEvents,
 } from './types'
 
-let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null
+let socket:
+  | Socket<ServerToClientEvents, ClientToServerEvents>
+  | null = null
 
 export function getSocket() {
   if (!socket) {
     socket = io({
       path: '/api/socket',
-      transports: ['websocket'],
       autoConnect: false,
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     })
   }
 
